@@ -18,3 +18,5 @@ numpy
 
 rich
 
+fastapi
+uvicorn
