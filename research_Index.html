@@ -1,0 +1,1278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Research Pipeline Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a120f;
+        --bg-2: #0d1613;
+        --panel: #101c17;
+        --panel-soft: #0d1815;
+        --border: #1f3129;
+        --border-soft: #182620;
+        --text: #e9e7dc;
+        --text-dim: #93a29a;
+        --text-faint: #54655d;
+
+        --amber: #e8a33d;
+        --amber-dim: #5a4324;
+        --cyan: #5fd4d0;
+        --cyan-dim: #204645;
+        --coral: #ff6b4a;
+        --coral-dim: #4a2a20;
+        --violet: #9b8cff;
+        --violet-dim: #2e2a52;
+        --green: #6bcb77;
+
+        --head: "Space Grotesk", sans-serif;
+        --mono: "IBM Plex Mono", monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background:
+          linear-gradient(var(--bg-2) 1px, transparent 1px) 0 0/100% 28px,
+          linear-gradient(90deg, var(--bg-2) 1px, transparent 1px) 0 0/28px 100%,
+          var(--bg);
+        background-blend-mode: normal;
+        color: var(--text);
+        font-family: var(--head);
+        min-height: 100vh;
+        padding: 40px 20px 80px;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(
+          ellipse 900px 500px at 50% -10%,
+          rgba(95, 212, 208, 0.08),
+          transparent 60%
+        );
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ---------- header ---------- */
+      .console-frame {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--panel), var(--panel-soft));
+        box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.7);
+        overflow: hidden;
+      }
+
+      header {
+        padding: 26px 30px 22px;
+        border-bottom: 1px solid var(--border-soft);
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 20px;
+      }
+      .title-block h1 {
+        margin: 0 0 10px;
+        font-family: var(--mono);
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--cyan);
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        flex-wrap: wrap;
+      }
+      .title-block h1 .tag {
+        font-size: 10.5px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        padding: 4px 10px;
+      }
+      .title-block p {
+        margin: 0;
+        max-width: 520px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: var(--text-dim);
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        border-radius: 100px;
+        background: var(--panel-soft);
+        white-space: nowrap;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-faint);
+        transition:
+          background 0.3s,
+          box-shadow 0.3s;
+      }
+      .status-pill.running .status-dot {
+        background: var(--amber);
+        box-shadow: 0 0 10px var(--amber);
+        animation: pulse 1.1s ease-in-out infinite;
+      }
+      .status-pill.done .status-dot {
+        background: var(--green);
+        box-shadow: 0 0 10px var(--green);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+
+      /* ---------- ticker ---------- */
+      .ticker {
+        overflow: hidden;
+        border-bottom: 1px solid var(--border-soft);
+        background: var(--panel-soft);
+      }
+      .ticker-inner {
+        display: flex;
+        width: max-content;
+        animation: ticker-scroll 28s linear infinite;
+      }
+      .ticker-group {
+        display: flex;
+        align-items: center;
+      }
+      .tick-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 26px 9px 0;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-dim);
+        white-space: nowrap;
+      }
+      .tick-item .mk {
+        width: 6px;
+        height: 6px;
+        flex: none;
+      }
+      @keyframes ticker-scroll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+
+      /* ---------- controls ---------- */
+      .controls {
+        display: flex;
+        gap: 12px;
+        padding: 20px 30px;
+        border-bottom: 1px solid var(--border-soft);
+        flex-wrap: wrap;
+        background: var(--panel-soft);
+      }
+      .controls input[type="text"] {
+        flex: 1;
+        min-width: 220px;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 14px;
+        padding: 12px 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .controls input[type="text"]:focus {
+        border-color: var(--cyan);
+      }
+      .controls input[type="text"]::placeholder {
+        color: var(--text-faint);
+      }
+
+      .run-btn {
+        font-family: var(--head);
+        font-weight: 600;
+        font-size: 14px;
+        color: #0a120f;
+        background: var(--cyan);
+        border: none;
+        border-radius: 6px;
+        padding: 0 22px;
+        cursor: pointer;
+        transition:
+          filter 0.15s,
+          transform 0.15s;
+      }
+      .run-btn:hover {
+        filter: brightness(1.08);
+      }
+      .run-btn:active {
+        transform: scale(0.98);
+      }
+      .run-btn:disabled {
+        background: var(--border);
+        color: var(--text-faint);
+        cursor: not-allowed;
+      }
+
+      /* ---------- pipeline flow strip ---------- */
+      .flow-strip {
+        display: flex;
+        align-items: center;
+        padding: 16px 30px 0;
+        gap: 6px;
+      }
+      .flow-seg {
+        flex: 1;
+        height: 3px;
+        border-radius: 3px;
+        background: var(--border);
+        position: relative;
+        overflow: hidden;
+      }
+      .flow-seg i {
+        display: block;
+        height: 100%;
+        width: 0%;
+        background: var(--seg-color, var(--cyan));
+        transition: width 0.5s ease;
+      }
+
+      /* ---------- channels ---------- */
+      .channels {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        padding: 18px 30px 8px;
+      }
+      @media (max-width: 920px) {
+        .channels {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 560px) {
+        .channels {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .channel {
+        border: 1px solid var(--border);
+        border-top: 2px solid var(--c-color);
+        border-radius: 8px;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        min-height: 230px;
+      }
+      .channel-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 12px 13px 10px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .channel-icon {
+        width: 22px;
+        height: 22px;
+        flex: none;
+        color: var(--c-color);
+      }
+      .channel-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        flex: 1;
+      }
+      .channel-tag {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+      .channel-status {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-faint);
+        flex: none;
+      }
+      .channel.active .channel-status {
+        background: var(--c-color);
+        box-shadow: 0 0 8px var(--c-color);
+        animation: pulse 1s ease-in-out infinite;
+      }
+      .channel.complete .channel-status {
+        background: var(--green);
+      }
+
+      .channel-log {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        line-height: 1.65;
+        color: var(--text-dim);
+        padding: 11px 13px;
+        flex: 1;
+        overflow: hidden;
+      }
+      .channel-log .line {
+        opacity: 0;
+        animation: fadein 0.35s forwards;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .channel-log .line.tag {
+        color: var(--c-color);
+      }
+      @keyframes fadein {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .channel-result {
+        border-top: 1px solid var(--border-soft);
+        padding: 10px 13px 12px;
+        font-size: 11px;
+        color: var(--text-dim);
+        display: none;
+      }
+      .channel-result.show {
+        display: block;
+      }
+      .result-item {
+        margin-bottom: 7px;
+      }
+      .result-item:last-child {
+        margin-bottom: 0;
+      }
+      .result-title {
+        color: var(--text);
+        font-weight: 500;
+        font-size: 11.5px;
+      }
+      .result-url {
+        font-family: var(--mono);
+        color: var(--c-color);
+        font-size: 10px;
+        word-break: break-all;
+      }
+
+      /* ---------- report ---------- */
+      .section-panel {
+        margin: 22px 30px 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        display: none;
+      }
+      .section-panel.show {
+        display: block;
+      }
+      .section-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-soft);
+      }
+      .section-panel-head .sq {
+        width: 9px;
+        height: 9px;
+        background: var(--coral);
+        flex: none;
+      }
+      .section-panel-head h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .section-panel-head .sub {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+
+      .report-body {
+        padding: 22px 24px 26px;
+        font-size: 14.5px;
+        line-height: 1.75;
+        color: var(--text);
+        max-width: 760px;
+      }
+      .report-body h3 {
+        font-size: 12px;
+        text-transform: none;
+        letter-spacing: 0.02em;
+        color: var(--coral);
+        border-left: 2px solid var(--coral);
+        padding-left: 10px;
+        margin: 22px 0 10px;
+        font-weight: 600;
+      }
+      .report-body h3:first-child {
+        margin-top: 0;
+      }
+      .report-body p {
+        margin: 0 0 12px;
+        color: var(--text-dim);
+      }
+      .report-body ul {
+        margin: 0 0 6px;
+        padding-left: 20px;
+      }
+      .report-body li {
+        margin-bottom: 10px;
+        color: var(--text-dim);
+      }
+      .report-body .src-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .report-body .src-list li {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--cyan);
+        padding: 6px 0;
+        border-bottom: 1px dashed var(--border-soft);
+      }
+      .report-body .src-list li:last-child {
+        border-bottom: none;
+      }
+      .cursor {
+        display: inline-block;
+        width: 7px;
+        height: 14px;
+        background: var(--coral);
+        vertical-align: -2px;
+        animation: blink 0.9s step-end infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* ---------- critique ---------- */
+      .critique-body {
+        display: flex;
+        gap: 30px;
+        padding: 22px 24px 26px;
+        flex-wrap: wrap;
+      }
+      .gauge-block {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 170px;
+      }
+      .gauge-label {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+      .gauge-num {
+        font-size: 15px;
+        color: var(--text-dim);
+        font-family: var(--mono);
+      }
+
+      .critique-lists {
+        flex: 1;
+        min-width: 260px;
+        display: flex;
+        gap: 26px;
+        flex-wrap: wrap;
+      }
+      .critique-col {
+        flex: 1;
+        min-width: 220px;
+      }
+      .critique-col h4 {
+        margin: 0 0 10px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .critique-col.strengths h4 {
+        color: var(--green);
+      }
+      .critique-col.improve h4 {
+        color: var(--amber);
+      }
+      .critique-col h4 .mk {
+        width: 7px;
+        height: 7px;
+        display: inline-block;
+      }
+      .critique-col.strengths h4 .mk {
+        background: var(--green);
+      }
+      .critique-col.improve h4 .mk {
+        background: var(--amber);
+      }
+      .critique-col ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .critique-col li {
+        font-size: 13px;
+        color: var(--text-dim);
+        padding: 7px 0 7px 15px;
+        border-left: 2px solid var(--border-soft);
+        margin-bottom: 6px;
+        line-height: 1.5;
+      }
+      .critique-col.strengths li {
+        border-left-color: var(--green);
+      }
+      .critique-col.improve li {
+        border-left-color: var(--amber);
+      }
+
+      .verdict {
+        margin: 4px 24px 24px;
+        padding: 16px 18px;
+        border-left: 2px solid var(--violet);
+        background: var(--violet-dim);
+        background: linear-gradient(
+          90deg,
+          rgba(155, 140, 255, 0.1),
+          transparent
+        );
+        font-size: 14px;
+        color: var(--text);
+        border-radius: 0 6px 6px 0;
+      }
+      .verdict span {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--violet);
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      footer {
+        padding: 16px 30px 22px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      footer .chain {
+        color: var(--text-dim);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="console-frame">
+        <header>
+          <div class="title-block">
+            <h1>
+              A.R.I.A. — Autonomous Research & Insight Agent
+              <span class="tag">console</span>
+            </h1>
+            <p>
+              Four agents run in sequence: one searches the web, one reads the
+              strongest source, one drafts the report, and one reviews it before
+              it ships.
+            </p>
+          </div>
+          <div class="status-pill" id="statusPill">
+            <span class="status-dot"></span>
+            <span id="statusText">Idle</span>
+          </div>
+        </header>
+
+        <div class="ticker">
+          <div class="ticker-inner" id="tickerInner"></div>
+        </div>
+
+        <div class="controls">
+          <input
+            type="text"
+            id="topicInput"
+            placeholder="Enter a research topic, e.g. solid-state batteries"
+            value="the rise of small language models"
+          />
+          <button class="run-btn" id="runBtn">Run pipeline</button>
+        </div>
+
+        <div class="flow-strip">
+          <div class="flow-seg">
+            <i id="seg1" style="--seg-color: var(--amber)"></i>
+          </div>
+          <div class="flow-seg">
+            <i id="seg2" style="--seg-color: var(--cyan)"></i>
+          </div>
+          <div class="flow-seg">
+            <i id="seg3" style="--seg-color: var(--coral)"></i>
+          </div>
+          <div class="flow-seg">
+            <i id="seg4" style="--seg-color: var(--violet)"></i>
+          </div>
+        </div>
+
+        <div class="channels">
+          <div class="channel" id="ch-search" style="--c-color: var(--amber)">
+            <div class="channel-head">
+              <svg
+                class="channel-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <line x1="15.3" y1="15.3" x2="20.5" y2="20.5" />
+              </svg>
+              <div class="channel-name">Search</div>
+              <div class="channel-tag">webSearch</div>
+              <div class="channel-status"></div>
+            </div>
+            <div class="channel-log" id="log-search"></div>
+            <div class="channel-result" id="result-search"></div>
+          </div>
+
+          <div class="channel" id="ch-read" style="--c-color: var(--cyan)">
+            <div class="channel-head">
+              <svg
+                class="channel-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <path d="M4 5.5c2-1 5-1 7 0v13c-2-1-5-1-7 0Z" />
+                <path d="M20 5.5c-2-1-5-1-7 0v13c2-1 5-1 7 0Z" />
+              </svg>
+              <div class="channel-name">Read</div>
+              <div class="channel-tag">urlScrapper</div>
+              <div class="channel-status"></div>
+            </div>
+            <div class="channel-log" id="log-read"></div>
+            <div class="channel-result" id="result-read"></div>
+          </div>
+
+          <div class="channel" id="ch-write" style="--c-color: var(--coral)">
+            <div class="channel-head">
+              <svg
+                class="channel-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <path d="M4 20l1-4L16 5l3 3L8 19l-4 1Z" />
+              </svg>
+              <div class="channel-name">Write</div>
+              <div class="channel-tag">writer_chain</div>
+              <div class="channel-status"></div>
+            </div>
+            <div class="channel-log" id="log-write"></div>
+            <div class="channel-result" id="result-write"></div>
+          </div>
+
+          <div
+            class="channel"
+            id="ch-critique"
+            style="--c-color: var(--violet)"
+          >
+            <div class="channel-head">
+              <svg
+                class="channel-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+              >
+                <path d="M5 12.5l4 4 10-10" />
+              </svg>
+              <div class="channel-name">Critique</div>
+              <div class="channel-tag">critic_chain</div>
+              <div class="channel-status"></div>
+            </div>
+            <div class="channel-log" id="log-critique"></div>
+            <div class="channel-result" id="result-critique"></div>
+          </div>
+        </div>
+
+        <div class="section-panel" id="reportPanel">
+          <div class="section-panel-head">
+            <span class="sq" style="background: var(--coral)"></span>
+            <h2>Draft report</h2>
+            <span class="sub" id="reportTopicTag"></span>
+          </div>
+          <div class="report-body" id="reportBody"></div>
+        </div>
+
+        <div class="section-panel" id="critiquePanel">
+          <div class="section-panel-head">
+            <span class="sq" style="background: var(--violet)"></span>
+            <h2>Critic review</h2>
+            <span class="sub">critic_chain output</span>
+          </div>
+          <div class="critique-body">
+            <div class="gauge-block">
+              <svg width="150" height="150" viewBox="0 0 150 150">
+                <circle
+                  cx="75"
+                  cy="75"
+                  r="62"
+                  fill="none"
+                  stroke="var(--border)"
+                  stroke-width="10"
+                />
+                <circle
+                  id="gaugeArc"
+                  cx="75"
+                  cy="75"
+                  r="62"
+                  fill="none"
+                  stroke="var(--violet)"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-dasharray="389.6"
+                  stroke-dashoffset="389.6"
+                  transform="rotate(-90 75 75)"
+                />
+                <text
+                  id="gaugeScore"
+                  x="75"
+                  y="70"
+                  text-anchor="middle"
+                  fill="var(--text)"
+                  font-family="IBM Plex Mono"
+                  font-size="30"
+                  font-weight="600"
+                >
+                  0
+                </text>
+                <text
+                  x="75"
+                  y="92"
+                  text-anchor="middle"
+                  fill="var(--text-faint)"
+                  font-family="IBM Plex Mono"
+                  font-size="11"
+                >
+                  / 10
+                </text>
+              </svg>
+              <div class="gauge-label">Overall score</div>
+            </div>
+            <div class="critique-lists">
+              <div class="critique-col strengths">
+                <h4><span class="mk"></span>Strengths</h4>
+                <ul id="strengthsList"></ul>
+              </div>
+              <div class="critique-col improve">
+                <h4><span class="mk"></span>Areas to improve</h4>
+                <ul id="improveList"></ul>
+              </div>
+            </div>
+          </div>
+          <div class="verdict" id="verdictBlock">
+            <span>One-line verdict</span>
+            <span id="verdictText"></span>
+          </div>
+        </div>
+
+        <footer>
+          <span>research_agent · groq / gpt-oss-20b · tavily search</span>
+          <span class="chain"
+            >search_agent → reader_agent → writer_chain → critic_chain</span
+          >
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+        // ---------- ticker readout ----------
+        const tickItems = [
+          {
+            color: "var(--amber)",
+            text: "Search agent queries Tavily for live, recent results.",
+          },
+          {
+            color: "var(--cyan)",
+            text: "Reader agent strips scripts, nav and footer before reading.",
+          },
+          {
+            color: "var(--coral)",
+            text: "Writer chain drafts the introduction, findings, conclusion and sources.",
+          },
+          {
+            color: "var(--violet)",
+            text: "Critic chain scores the draft and flags what to fix.",
+          },
+        ];
+        function buildTickerGroup() {
+          const group = document.createElement("div");
+          group.className = "ticker-group";
+          tickItems.forEach((item) => {
+            const el = document.createElement("div");
+            el.className = "tick-item";
+            el.innerHTML = `<span class="mk" style="background:${item.color}"></span>${item.text}`;
+            group.appendChild(el);
+          });
+          return group;
+        }
+        const tickerInner = document.getElementById("tickerInner");
+        tickerInner.appendChild(buildTickerGroup());
+        tickerInner.appendChild(buildTickerGroup());
+
+        const domains = [
+          "nature.com",
+          "arxiv.org",
+          "technologyreview.com",
+          "reuters.com",
+          "wired.com",
+          "sciencedirect.com",
+          "ieeexplore.ieee.org",
+          "theatlantic.com",
+          "bloomberg.com",
+          "ft.com",
+        ];
+
+        const titleTemplates = [
+          "What the latest data says about {t}",
+          "{t}: a field guide for 2026",
+          "Inside the race to scale {t}",
+          "Why {t} is harder than it looks",
+          "{t}, explained by the people building it",
+          "The quiet shift toward {t}",
+          "Three things nobody tells you about {t}",
+          "{t} is moving faster than regulation can follow",
+        ];
+
+        const snippetTemplates = [
+          "Researchers tracking {t} report steady progress over the last two quarters, with adoption concentrated among early movers.",
+          "A recent survey of practitioners working on {t} found broad agreement on the opportunity but real disagreement on timelines.",
+          "Engineering teams say {t} is easier to prototype than to run reliably in production at scale.",
+          "Analysts covering {t} point to falling costs as the main driver behind renewed interest this year.",
+          "Independent benchmarks on {t} show meaningful gains, though results vary widely across setups.",
+          "Policy discussion around {t} has intensified as deployments move from pilots to real workloads.",
+        ];
+
+        function hash(str) {
+          let h = 0;
+          for (let i = 0; i < str.length; i++) {
+            h = (h * 31 + str.charCodeAt(i)) >>> 0;
+          }
+          return h;
+        }
+
+        function pick(arr, seed) {
+          return arr[seed % arr.length];
+        }
+
+        function titleCase(t) {
+          return t.replace(/\w\S*/g, (w) => w[0].toUpperCase() + w.slice(1));
+        }
+
+        function buildSearchResults(topic) {
+          const h = hash(topic || "topic");
+          const results = [];
+          for (let i = 0; i < 5; i++) {
+            const seed = h + i * 97;
+            results.push({
+              title: pick(titleTemplates, seed).replace(
+                "{t}",
+                titleCase(topic),
+              ),
+              url:
+                "https://www." +
+                pick(domains, seed + 3) +
+                "/" +
+                topic
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .slice(0, 40) +
+                "-" +
+                ((seed % 900) + 100),
+              snippet: pick(snippetTemplates, seed + 5).replace("{t}", topic),
+            });
+          }
+          return results;
+        }
+
+        function buildScraped(topic, source) {
+          return `The article opens by framing ${topic} in practical terms, then walks through where teams are seeing real gains versus where the hype is running ahead of results. It cites several practitioners who describe early deployments as promising but fragile, and closes by noting that the next twelve months will likely separate durable approaches to ${topic} from ones that don't survive contact with production.`;
+        }
+
+        const findingTemplates = [
+          "Adoption of {t} is uneven: a small set of well-resourced teams are pulling ahead while most organizations are still evaluating pilots.",
+          "Cost has fallen faster than expected, which is the single biggest reason {t} is now viable outside research labs.",
+          "The biggest open problem with {t} isn't the core technique — it's reliability once it leaves a controlled test environment.",
+          "Independent sources broadly agree on the direction of {t}, but estimates of the timeline vary by a factor of two or more.",
+          "Regulatory attention on {t} is increasing, and teams that plan for it early report fewer downstream surprises.",
+          "Practitioners consistently flag data quality, not model choice, as the limiting factor for {t} in production.",
+        ];
+
+        function buildReport(topic, results) {
+          const h = hash(topic);
+          const findings = [0, 1, 2].map((i) =>
+            pick(findingTemplates, h + i * 13).replace(/{t}/g, topic),
+          );
+          const sources = results.map((r) => r.url);
+          return {
+            intro: `${titleCase(topic)} has moved from a niche interest to a subject with real operational stakes. This report pulls together the most recent, credible coverage to summarize where things stand, what's working, and what still needs to be resolved before ${topic} can be relied on at scale.`,
+            findings,
+            conclusion: `Taken together, the sources suggest ${topic} is past the novelty stage but not yet mature: the underlying approach is sound, momentum is real, and the remaining work is mostly about reliability, cost discipline, and clear-eyed evaluation rather than fundamental breakthroughs.`,
+            sources,
+          };
+        }
+
+        const strengthPool = [
+          "Findings are grounded in named, checkable sources rather than vague generalities.",
+          "The report distinguishes between what's proven and what's still speculative.",
+          "Structure is easy to follow and each section does one clear job.",
+          "Conclusion follows directly from the findings rather than overreaching.",
+        ];
+        const improvePool = [
+          "Could use one concrete, quantified example rather than general trend statements.",
+          "Sourcing leans on a single scrape — a second independent source would strengthen it.",
+          "The conclusion could name a specific near-term milestone to watch for.",
+          "Counterarguments or skeptical takes aren't represented yet.",
+        ];
+        const verdictPool = [
+          "Solid first draft — tighten the sourcing and it's ready to ship.",
+          "Clear and well-organized, but still one source away from convincing.",
+          "Good bones; needs a sharper, more specific conclusion.",
+          "Reads well — the main gap is a lack of dissenting evidence.",
+        ];
+
+        function buildCritique(topic) {
+          const h = hash(topic + "critic");
+          const score = 6 + (h % 3); // 6,7,8
+          const strengths = [
+            strengthPool[h % strengthPool.length],
+            strengthPool[(h + 1) % strengthPool.length],
+          ];
+          const improvements = [
+            improvePool[h % improvePool.length],
+            improvePool[(h + 2) % improvePool.length],
+          ];
+          const verdict = verdictPool[h % verdictPool.length];
+          return { score, strengths, improvements, verdict };
+        }
+
+        // ---------- UI plumbing ----------
+
+        const statusPill = document.getElementById("statusPill");
+        const statusText = document.getElementById("statusText");
+        const runBtn = document.getElementById("runBtn");
+        const topicInput = document.getElementById("topicInput");
+
+        function setStatus(mode, label) {
+          statusPill.className = "status-pill " + mode;
+          statusText.textContent = label;
+        }
+
+        function resetChannel(id) {
+          const ch = document.getElementById("ch-" + id);
+          ch.classList.remove("active", "complete");
+          document.getElementById("log-" + id).innerHTML = "";
+          const res = document.getElementById("result-" + id);
+          res.classList.remove("show");
+          res.innerHTML = "";
+        }
+
+        async function logLine(id, text, opts = {}) {
+          const box = document.getElementById("log-" + id);
+          const line = document.createElement("div");
+          line.className = "line" + (opts.tag ? " tag" : "");
+          line.textContent = text;
+          box.appendChild(line);
+          box.scrollTop = box.scrollHeight;
+          await sleep(opts.delay ?? 260);
+        }
+
+        function setSeg(n, pct) {
+          document.getElementById("seg" + n).style.width = pct + "%";
+        }
+
+        async function typeInto(el, htmlChunks, speed = 6) {
+          // htmlChunks: array of {tag, text} rendered progressively as plain reveal per block for perf
+          for (const chunk of htmlChunks) {
+            const node = document.createElement(chunk.tag);
+            if (chunk.cls) node.className = chunk.cls;
+            el.appendChild(node);
+            const text = chunk.text;
+            const step = Math.max(1, Math.floor(text.length / 40));
+            for (let i = 0; i <= text.length; i += step) {
+              node.textContent = text.slice(0, i);
+              await sleep(speed);
+            }
+            node.textContent = text;
+          }
+        }
+
+        async function runPipeline() {
+          const topic = (topicInput.value || "the given topic").trim();
+          runBtn.disabled = true;
+          setStatus("running", "Running");
+          ["search", "read", "write", "critique"].forEach(resetChannel);
+          document.getElementById("reportPanel").classList.remove("show");
+          document.getElementById("critiquePanel").classList.remove("show");
+          [1, 2, 3, 4].forEach((n) => setSeg(n, 0));
+
+          // ---- stage 1: search ----
+          const chSearch = document.getElementById("ch-search");
+          chSearch.classList.add("active");
+          await logLine("search", "$ search_agent.invoke(topic)", {
+            tag: true,
+            delay: 200,
+          });
+          await logLine("search", `> querying tavily for: "${topic}"`, {
+            delay: 500,
+          });
+          await logLine("search", "> collecting titles, urls, snippets...", {
+            delay: 650,
+          });
+          const results = buildSearchResults(topic);
+          await logLine("search", `> received ${results.length} results`, {
+            delay: 400,
+          });
+          chSearch.classList.remove("active");
+          chSearch.classList.add("complete");
+          setSeg(1, 100);
+
+          const resSearch = document.getElementById("result-search");
+          results.slice(0, 3).forEach((r) => {
+            const div = document.createElement("div");
+            div.className = "result-item";
+            div.innerHTML = `<div class="result-title">${r.title}</div><div class="result-url">${r.url}</div>`;
+            resSearch.appendChild(div);
+          });
+          resSearch.classList.add("show");
+
+          // ---- stage 2: read ----
+          const chRead = document.getElementById("ch-read");
+          chRead.classList.add("active");
+          await logLine("read", "$ reader_agent.invoke(top_result)", {
+            tag: true,
+            delay: 200,
+          });
+          await logLine("read", `> selected: ${results[0].url}`, {
+            delay: 500,
+          });
+          await logLine(
+            "read",
+            "> fetching page + stripping nav / script / style...",
+            { delay: 700 },
+          );
+          const scraped = buildScraped(topic);
+          await logLine("read", "> extracted ~500 chars of clean text", {
+            delay: 400,
+          });
+          chRead.classList.remove("active");
+          chRead.classList.add("complete");
+          setSeg(2, 100);
+
+          const resRead = document.getElementById("result-read");
+          resRead.innerHTML = `<div style="font-style:normal; color:var(--text-dim);">"${scraped.slice(0, 150)}..."</div>`;
+          resRead.classList.add("show");
+
+          // ---- stage 3: write ----
+          const chWrite = document.getElementById("ch-write");
+          chWrite.classList.add("active");
+          await logLine("write", "$ writer_chain.invoke(topic, research)", {
+            tag: true,
+            delay: 200,
+          });
+          await logLine("write", "> drafting introduction...", { delay: 550 });
+          await logLine("write", "> compiling key findings (3)...", {
+            delay: 550,
+          });
+          await logLine("write", "> writing conclusion + sources...", {
+            delay: 550,
+          });
+          const report = buildReport(topic, results);
+          chWrite.classList.remove("active");
+          chWrite.classList.add("complete");
+          setSeg(3, 100);
+          document.getElementById("result-write").innerHTML =
+            `<div class="result-item"><span class="result-title">Report drafted</span><br><span style="color:var(--text-faint)">${report.findings.length} findings · ${report.sources.length} sources</span></div>`;
+          document.getElementById("result-write").classList.add("show");
+
+          const reportPanel = document.getElementById("reportPanel");
+          const reportBody = document.getElementById("reportBody");
+          reportBody.innerHTML = "";
+          document.getElementById("reportTopicTag").textContent = topic;
+          reportPanel.classList.add("show");
+          reportPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+          const introH = document.createElement("h3");
+          introH.textContent = "Introduction";
+          reportBody.appendChild(introH);
+          await typeInto(reportBody, [{ tag: "p", text: report.intro }], 4);
+
+          const findH = document.createElement("h3");
+          findH.textContent = "Key findings";
+          reportBody.appendChild(findH);
+          const ul = document.createElement("ul");
+          reportBody.appendChild(ul);
+          for (const f of report.findings) {
+            const li = document.createElement("li");
+            ul.appendChild(li);
+            await typeInto(li, [{ tag: "span", text: f }], 4);
+          }
+
+          const concH = document.createElement("h3");
+          concH.textContent = "Conclusion";
+          reportBody.appendChild(concH);
+          await typeInto(
+            reportBody,
+            [{ tag: "p", text: report.conclusion }],
+            4,
+          );
+
+          const srcH = document.createElement("h3");
+          srcH.textContent = "Sources";
+          reportBody.appendChild(srcH);
+          const srcUl = document.createElement("ul");
+          srcUl.className = "src-list";
+          report.sources.forEach((s) => {
+            const li = document.createElement("li");
+            li.textContent = s;
+            srcUl.appendChild(li);
+          });
+          reportBody.appendChild(srcUl);
+
+          // ---- stage 4: critique ----
+          const chCrit = document.getElementById("ch-critique");
+          chCrit.classList.add("active");
+          await logLine("critique", "$ critic_chain.invoke(report)", {
+            tag: true,
+            delay: 200,
+          });
+          await logLine("critique", "> scoring structure, evidence, tone...", {
+            delay: 600,
+          });
+          const critique = buildCritique(topic);
+          await logLine("critique", `> score: ${critique.score}/10`, {
+            delay: 400,
+          });
+          chCrit.classList.remove("active");
+          chCrit.classList.add("complete");
+          setSeg(4, 100);
+          document.getElementById("result-critique").innerHTML =
+            `<div class="result-item"><span class="result-title">Review complete</span></div>`;
+          document.getElementById("result-critique").classList.add("show");
+
+          const critiquePanel = document.getElementById("critiquePanel");
+          critiquePanel.classList.add("show");
+
+          const circumference = 389.6;
+          const offset = circumference * (1 - critique.score / 10);
+          const arc = document.getElementById("gaugeArc");
+          const scoreText = document.getElementById("gaugeScore");
+          arc.style.transition = "stroke-dashoffset 1s ease";
+          requestAnimationFrame(() => {
+            arc.style.strokeDashoffset = offset;
+          });
+          let cur = 0;
+          const target = critique.score;
+          const timer = setInterval(() => {
+            cur += 1;
+            scoreText.textContent = Math.min(cur, target);
+            if (cur >= target) clearInterval(timer);
+          }, 90);
+
+          const strengthsList = document.getElementById("strengthsList");
+          const improveList = document.getElementById("improveList");
+          strengthsList.innerHTML = "";
+          improveList.innerHTML = "";
+          critique.strengths.forEach((s) => {
+            const li = document.createElement("li");
+            li.textContent = s;
+            strengthsList.appendChild(li);
+          });
+          critique.improvements.forEach((s) => {
+            const li = document.createElement("li");
+            li.textContent = s;
+            improveList.appendChild(li);
+          });
+          document.getElementById("verdictText").textContent = critique.verdict;
+
+          critiquePanel.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+
+          setStatus("done", "Complete");
+          runBtn.disabled = false;
+        }
+
+        runBtn.addEventListener("click", runPipeline);
+        topicInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") runPipeline();
+        });
+      })();
+    </script>
+  </body>
+</html>
